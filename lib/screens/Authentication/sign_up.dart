@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:hirecue_app/Services/auth_service.dart';
 import 'package:hirecue_app/screens/Authentication/sign_in.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -15,6 +16,11 @@ class SignUp extends StatefulWidget {
 }
 
 class _SignUpState extends State<SignUp> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,17 +75,19 @@ class _SignUpState extends State<SignUp> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const TextField(
+                        TextField(
+                          controller: _firstNameController,
                           keyboardType: TextInputType.name,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'First Name',
                             hintText: 'Enter Name',
                           ),
                         ),
                         const SizedBox(height: 20.0),
-                        const TextField(
+                        TextField(
                           keyboardType: TextInputType.name,
-                          decoration: InputDecoration(
+                          controller: _lastNameController,
+                          decoration: const InputDecoration(
                             labelText: 'Last Name',
                             hintText: 'Enter Last Name',
                           ),
@@ -87,6 +95,7 @@ class _SignUpState extends State<SignUp> {
                         const SizedBox(height: 20.0),
                         AppTextField(
                           textFieldType: TextFieldType.EMAIL,
+                          controller: _emailController,
                           decoration: const InputDecoration(
                             labelText: 'Email Address',
                             hintText: 'Enter Email',
@@ -95,6 +104,7 @@ class _SignUpState extends State<SignUp> {
                         const SizedBox(height: 20.0),
                         AppTextField(
                           textFieldType: TextFieldType.PASSWORD,
+                          controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
                             labelStyle: kTextStyle,
@@ -107,8 +117,13 @@ class _SignUpState extends State<SignUp> {
                           buttonDecoration: kButtonDecoration.copyWith(
                             color: ColorConfig.secondColor,
                           ),
-                          onPressed: () {
-                            // HomeScreen().launch(context);
+                          onPressed: () async {
+                            await AuthService().signup(
+                                email: _emailController.text,
+                                password: _passwordController.text,
+                                firstName: _firstNameController.text,
+                                lastName: _lastNameController.text,
+                                context: context);
                           },
                         ),
                         const SizedBox(height: 20.0),

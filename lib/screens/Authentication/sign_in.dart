@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hirecue_app/GlobalComponents/color_config.dart';
+import 'package:hirecue_app/Services/auth_service.dart';
 import 'package:hirecue_app/constant.dart';
 import 'package:hirecue_app/screens/Authentication/forgot_password.dart';
 import 'package:hirecue_app/screens/Authentication/sign_up.dart';
@@ -19,7 +20,8 @@ class SignIn extends StatefulWidget {
 }
 
 class _SignInState extends State<SignIn> {
-  final TextEditingController controller = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool isChecked = false;
   bool obscurePassword = true;
 
@@ -62,7 +64,7 @@ class _SignInState extends State<SignIn> {
                       children: [
                         TextField(
                           keyboardType: TextInputType.emailAddress,
-                          controller: TextEditingController(),
+                          controller: _emailController,
                           decoration: const InputDecoration(
                             labelText: 'Email',
                             prefixIcon: Icon(Icons.email),
@@ -71,6 +73,7 @@ class _SignInState extends State<SignIn> {
                         const SizedBox(height: 20.0),
                         TextField(
                           obscureText: obscurePassword,
+                          controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock),
@@ -126,8 +129,11 @@ class _SignInState extends State<SignIn> {
                           buttonDecoration: kButtonDecoration.copyWith(
                             color: ColorConfig.secondColor,
                           ),
-                          onPressed: () {
-                            // const HomeScreen().launch(context);
+                          onPressed: () async {
+                            await AuthService().signin(
+                                email: _emailController.text,
+                                password: _passwordController.text,
+                                context: context);
                           },
                         ),
                         const SizedBox(height: 20.0),
