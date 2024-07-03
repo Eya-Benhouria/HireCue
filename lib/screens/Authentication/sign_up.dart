@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:hirecue_app/Services/auth_service.dart';
+import 'package:hirecue_app/services/auth_service.dart';
 import 'package:hirecue_app/screens/Authentication/sign_in.dart';
-import 'package:nb_utils/nb_utils.dart';
-
-import '../../GlobalComponents/button_global.dart';
-import '../../GlobalComponents/color_config.dart';
-import '../../constant.dart';
+import 'package:hirecue_app/screens/Home/home.dart';
+import 'package:hirecue_app/GlobalComponents/button_global.dart';
+import 'package:hirecue_app/GlobalComponents/color_config.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({Key? key}) : super(key: key);
@@ -35,7 +35,7 @@ class _SignUpState extends State<SignUp> {
         ),
         title: Text(
           'Sign Up',
-          style: kTextStyle.copyWith(
+          style: TextStyle(
             color: Colors.white,
             fontSize: 20,
           ),
@@ -60,7 +60,7 @@ class _SignUpState extends State<SignUp> {
                   const SizedBox(height: 20.0),
                   Text(
                     'Sign Up now to begin an amazing journey!',
-                    style: kTextStyle.copyWith(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                     ),
@@ -93,8 +93,8 @@ class _SignUpState extends State<SignUp> {
                           ),
                         ),
                         const SizedBox(height: 20.0),
-                        AppTextField(
-                          textFieldType: TextFieldType.EMAIL,
+                        TextField(
+                          keyboardType: TextInputType.emailAddress,
                           controller: _emailController,
                           decoration: const InputDecoration(
                             labelText: 'Email Address',
@@ -102,28 +102,29 @@ class _SignUpState extends State<SignUp> {
                           ),
                         ),
                         const SizedBox(height: 20.0),
-                        AppTextField(
-                          textFieldType: TextFieldType.PASSWORD,
+                        TextField(
+                          obscureText: true,
                           controller: _passwordController,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Password',
-                            labelStyle: kTextStyle,
                             hintText: 'Enter password',
                           ),
                         ),
                         const SizedBox(height: 20.0),
                         ButtonGlobal(
                           buttontext: 'Sign Up',
-                          buttonDecoration: kButtonDecoration.copyWith(
+                          buttonDecoration: BoxDecoration(
                             color: ColorConfig.secondColor,
+                            borderRadius: BorderRadius.circular(10.0),
                           ),
                           onPressed: () async {
                             await AuthService().signup(
-                                email: _emailController.text,
-                                password: _passwordController.text,
-                                firstName: _firstNameController.text,
-                                lastName: _lastNameController.text,
-                                context: context);
+                              firstName: _firstNameController.text,
+                              lastName: _lastNameController.text,
+                              email: _emailController.text,
+                              password: _passwordController.text,
+                              context: context,
+                            );
                           },
                         ),
                         const SizedBox(height: 20.0),
@@ -131,20 +132,28 @@ class _SignUpState extends State<SignUp> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Have an account?   ',
-                              style: kTextStyle.copyWith(
-                                color: kGreyTextColor,
+                              'Have an account? ',
+                              style: TextStyle(
+                                color: Colors.grey[600],
                               ),
                             ),
-                            Text(
-                              'Sign In',
-                              style: kTextStyle.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: ColorConfig.secondColor,
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SignIn(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: ColorConfig.secondColor,
+                                ),
                               ),
-                            ).onTap(() {
-                              SignIn().launch(context);
-                            }),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 20.0),
@@ -153,8 +162,8 @@ class _SignUpState extends State<SignUp> {
                           children: [
                             Text(
                               'Or Sign Up With...',
-                              style: kTextStyle.copyWith(
-                                color: kGreyTextColor,
+                              style: TextStyle(
+                                color: Colors.grey[600],
                                 fontSize: 12.0,
                               ),
                             ),
@@ -180,18 +189,23 @@ class _SignUpState extends State<SignUp> {
                                 ),
                               ),
                             ),
-                            Card(
-                              elevation: 2.0,
-                              color: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Image.asset(
-                                  'images/google.png',
-                                  height: 25.0,
-                                  width: 25.0,
+                            InkWell(
+                              onTap: () async {
+                                AuthService().signInWithGoogle(context);
+                              },
+                              child: Card(
+                                elevation: 2.0,
+                                color: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.0),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Image.asset(
+                                    'images/google.png',
+                                    height: 25.0,
+                                    width: 25.0,
+                                  ),
                                 ),
                               ),
                             ),

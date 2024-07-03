@@ -12,7 +12,20 @@
           "package_name": "com.example.hirecue_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1049187549557-e3vpp0f4g97na77imgceb79v1rmuskcu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.hirecue_app",
+            "certificate_hash": "f4b67fd10b1c8299e0923f225d742f28f8e59d33"
+          }
+        },
+        {
+          "client_id": "1049187549557-peeunv93l7mqqdi11u0ldpt4o1me962f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCFodgVyklcDfCq_8u6Fj13TAobqcICOkY"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1049187549557-peeunv93l7mqqdi11u0ldpt4o1me962f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1049187549557-1p6bgnqnfev1ftmd72jnh5hfk6s1m1qp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.hirecueApp"
+              }
+            }
+          ]
         }
       }
     }

@@ -143,7 +143,7 @@ class _SignInState extends State<SignIn> {
                         // Sign In with Google button
                         ElevatedButton.icon(
                           onPressed: () {
-                            // TODO: Implement Google sign-in logic
+                            AuthService().signInWithGoogle(context);
                           },
                           icon: Image.asset(
                             'images/google.png',
