@@ -2,6 +2,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
+import 'package:hirecue_app/Services/auth_service.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 import '../../GlobalComponents/button_global.dart';
@@ -17,6 +18,9 @@ class ForgotPassword extends StatefulWidget {
 }
 
 class _ForgotPasswordState extends State<ForgotPassword> {
+  final _auth = AuthService();
+  final _email = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,7 +42,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Text(
-              'Lorem ipsum dolor sit amet, consectetur.',
+              'Enter your email to get a password reset email.',
               style: kTextStyle.copyWith(color: Colors.white),
             ),
           ),
@@ -59,22 +63,14 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   SizedBox(
                     height: 60.0,
                     child: AppTextField(
-                      textFieldType: TextFieldType.PHONE,
-                      controller: TextEditingController(),
+                      textFieldType: TextFieldType.EMAIL,
+                      controller: _email,
                       enabled: true,
                       decoration: InputDecoration(
-                        labelText: 'Phone Number',
-                        hintText: 'Enter Phone Number',
+                        labelText: 'Email',
+                        hintText: 'Enter Your Email',
                         labelStyle: kTextStyle,
                         floatingLabelBehavior: FloatingLabelBehavior.never,
-                        // prefixIcon: CountryCodePicker(
-                        //   padding: EdgeInsets.zero,
-                        //   onChanged: print,
-                        //   initialSelection: 'BD',
-                        //   showFlag: true,
-                        //   showDropDownButton: true,
-                        //   alignLeft: false,
-                        // ),
                       ),
                     ),
                   ),
@@ -82,11 +78,14 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                     height: 20.0,
                   ),
                   ButtonGlobal(
-                    buttontext: 'Get Otp',
+                    buttontext: 'Send Email',
                     buttonDecoration: kButtonDecoration.copyWith(
                         color: ColorConfig.secondColor),
                     onPressed: () {
-                      const PhoneVerification().launch(context);
+                      _auth.sendPasswordReset(_email.text);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content:Text(
+                              "An email has been sent to reset your password!")));
                     },
                   ),
                 ],
