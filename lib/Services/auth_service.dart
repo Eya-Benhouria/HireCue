@@ -17,6 +17,20 @@ class AuthService {
     required BuildContext context,
   }) async {
     try {
+      // Validate password strength
+      List<String> validationMessages = _validatePassword(password);
+      if (validationMessages.isNotEmpty) {
+        Fluttertoast.showToast(
+          msg: validationMessages.join('\n'),
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.SNACKBAR,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+        return;
+      }
+
       await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -25,7 +39,7 @@ class AuthService {
       await Future.delayed(const Duration(seconds: 1));
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (BuildContext context) => const Home()),
+        MaterialPageRoute(builder: (BuildContext context) => Home()),
       );
     } on FirebaseAuthException catch (e) {
       String message = '';
@@ -47,6 +61,32 @@ class AuthService {
     }
   }
 
+  List<String> _validatePassword(String password) {
+    List<String> messages = [];
+    if (password.length < 8) {
+      messages.add('✘ Password must be at least 8 characters long.');
+    }
+    if (!RegExp(r'(?=.*[A-Z])').hasMatch(password)) {
+      messages.add('✘ Include at least one uppercase letter.');
+    }
+    if (!RegExp(r'(?=.*[a-z])').hasMatch(password)) {
+      messages.add('✘ Include at least one lowercase letter.');
+    }
+    if (!RegExp(r'(?=.*\d)').hasMatch(password)) {
+      messages.add('✘ Include at least one digit.');
+    }
+    if (!RegExp(r'(?=.*[!@#\$&*~])').hasMatch(password)) {
+      messages.add('✘ Include at least one special character.');
+    }
+    return messages;
+  }
+
+  bool _isValidPassword(String password) {
+    final passwordRegex =
+        RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#\$&*~]).{8,}$');
+    return passwordRegex.hasMatch(password);
+  }
+
   Future<void> signin({
     required String email,
     required String password,
@@ -61,7 +101,7 @@ class AuthService {
       await Future.delayed(const Duration(seconds: 1));
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (BuildContext context) => const Home()),
+        MaterialPageRoute(builder: (BuildContext context) => Home()),
       );
     } on FirebaseAuthException catch (e) {
       String message = '';
@@ -128,7 +168,7 @@ class AuthService {
       print('Navigation to Home after Google sign-in...');
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (BuildContext context) => const Home()),
+        MaterialPageRoute(builder: (BuildContext context) => Home()),
       );
     } catch (e) {
       print('Google sign-in error: ${e.toString()}');
