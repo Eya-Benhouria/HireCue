@@ -31,10 +31,10 @@ class _SplashScreenState extends State<SplashScreen> {
     defaultSpreadRadius = 0.5;
 
     bool isValid = await PurchaseModel().isActiveBuyer();
-    if(isValid){
+    if (isValid) {
       finish(context);
       const OnBoard().launch(context, isNewTask: true);
-    } else{
+    } else {
       showLicense(context: context);
     }
   }
@@ -48,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: kMainColor,
+        backgroundColor: Color.fromRGBO(134, 230, 215, 1),
         body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
               height: MediaQuery.of(context).size.height / 3,
             ),
             const Image(
-              image: AssetImage('images/round_logo.png'),
+              image: AssetImage('images/logo.png'),
             ),
             const Spacer(),
             Center(
@@ -65,7 +65,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 padding: const EdgeInsets.only(bottom: 10.0),
                 child: Text(
                   'Version 1.0.0',
-                  style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.normal, fontSize: 15.0),
+                  style: GoogleFonts.manrope(
+                      color: Colors.white,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 15.0),
                 ),
               ),
             ),

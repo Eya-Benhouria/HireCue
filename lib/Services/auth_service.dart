@@ -123,6 +123,14 @@ class AuthService {
     }
   }
 
+  Future<void> sendPasswordReset(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
   Future<void> signout({
     required BuildContext context,
   }) async {

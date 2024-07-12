@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
           TargetPlatform.android: CupertinoPageTransitionsBuilder(),
         }),
       ),
+   
       title: 'HireCue',
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
