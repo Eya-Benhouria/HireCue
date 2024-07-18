@@ -4,6 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hirecue_app/screens/Authentication/sign_in.dart';
 import 'package:hirecue_app/screens/Home/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -31,10 +32,12 @@ class AuthService {
         return;
       }
 
-      await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      await sendEmailVerification(userCredential.user!);
 
       await Future.delayed(const Duration(seconds: 1));
       Navigator.pushReplacement(
@@ -61,6 +64,22 @@ class AuthService {
     }
   }
 
+  Future<void> sendEmailVerification(User user) async {
+    try {
+      await user.sendEmailVerification();
+      Fluttertoast.showToast(
+        msg: 'Verification email sent',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } catch (e) {
+      print('Failed to send email verification: ${e.toString()}');
+    }
+  }
+
   List<String> _validatePassword(String password) {
     List<String> messages = [];
     if (password.length < 8) {
@@ -81,22 +100,26 @@ class AuthService {
     return messages;
   }
 
-  bool _isValidPassword(String password) {
-    final passwordRegex =
-        RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#\$&*~]).{8,}$');
-    return passwordRegex.hasMatch(password);
-  }
-
   Future<void> signin({
     required String email,
     required String password,
     required BuildContext context,
   }) async {
     try {
-      await _auth.signInWithEmailAndPassword(
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+     SharedPreferences prefs = await SharedPreferences.getInstance();
+String? idToken = await userCredential.user!.getIdToken();
+if (idToken != null) {
+  await prefs.setString('idToken', idToken);
+} else {
+  // Handle case where idToken is null, if needed
+  print('Id token is null');
+}
+
 
       await Future.delayed(const Duration(seconds: 1));
       Navigator.pushReplacement(
@@ -123,19 +146,13 @@ class AuthService {
     }
   }
 
-  Future<void> sendPasswordReset(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-    } catch (e) {
-      print(e.toString());
-    }
-  }
-
   Future<void> signout({
     required BuildContext context,
   }) async {
     await _auth.signOut();
     await _googleSignIn.signOut();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('idToken');
     await Future.delayed(const Duration(seconds: 1));
     Navigator.pushReplacement(
       context,
@@ -145,10 +162,8 @@ class AuthService {
 
   void signInWithGoogle(BuildContext context) async {
     try {
-      print('Attempting to sign in with Google...');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        print('Google sign-in canceled by user.');
         Fluttertoast.showToast(
           msg: "Google sign-in canceled by user.",
           toastLength: Toast.LENGTH_LONG,
@@ -157,29 +172,31 @@ class AuthService {
           textColor: Colors.white,
           fontSize: 14.0,
         );
-        return; // The user canceled the sign-in
+        return;
       }
 
-      print('Google sign-in successful, retrieving authentication tokens...');
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      print('Creating AuthCredential from Google authentication tokens...');
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      print('Signing in with Google AuthCredential...');
-      await _auth.signInWithCredential(credential);
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
 
-      print('Navigation to Home after Google sign-in...');
+     SharedPreferences prefs = await SharedPreferences.getInstance();
+String? idToken = await userCredential.user!.getIdToken();
+if (idToken != null) {
+  await prefs.setString('idToken', idToken);
+} else {
+  // Handle case where idToken is null, if needed
+  print('Id token is null');
+}
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (BuildContext context) => Home()),
       );
     } catch (e) {
-      print('Google sign-in error: ${e.toString()}');
       Fluttertoast.showToast(
         msg: "Google sign-in failed: ${e.toString()}",
         toastLength: Toast.LENGTH_LONG,
@@ -191,10 +208,16 @@ class AuthService {
     }
   }
 
+  Future<void> sendPasswordReset(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
   Future<void> googleSignout() async {
-    print('Signing out from Google...');
     await _auth.signOut();
     await _googleSignIn.signOut();
-    print('Google sign-out successful.');
   }
 }
