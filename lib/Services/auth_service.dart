@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -100,7 +101,7 @@ class AuthService {
     return messages;
   }
 
-  Future<void> signin({
+  Future<bool> signin({
     required String email,
     required String password,
     required BuildContext context,
@@ -111,21 +112,20 @@ class AuthService {
         password: password,
       );
 
-     SharedPreferences prefs = await SharedPreferences.getInstance();
-String? idToken = await userCredential.user!.getIdToken();
-if (idToken != null) {
-  await prefs.setString('idToken', idToken);
-} else {
-  // Handle case where idToken is null, if needed
-  print('Id token is null');
-}
-
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? idToken = await userCredential.user!.getIdToken();
+      if (idToken != null) {
+        await prefs.setString('idToken', idToken);
+      } else {
+        print('Id token is null');
+      }
 
       await Future.delayed(const Duration(seconds: 1));
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (BuildContext context) => Home()),
       );
+      return true;
     } on FirebaseAuthException catch (e) {
       String message = '';
       if (e.code == 'invalid-email') {
@@ -141,8 +141,10 @@ if (idToken != null) {
         textColor: Colors.white,
         fontSize: 14.0,
       );
+      return false;
     } catch (e) {
       print('Signin Error: ${e.toString()}');
+      return false;
     }
   }
 

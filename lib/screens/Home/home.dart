@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:hirecue_app/screens/Tests/JobDetailsScreen.dart';
 import 'package:http/http.dart' as http;
 
 import '../../GlobalComponents/color_config.dart';
-import '../../models/job.dart'; 
-import 'JobDetailsScreen.dart' ; 
-import 'ApplyNowScreen.dart';
+import '../../models/job.dart';
+
 
 class Home extends StatefulWidget {
   @override
@@ -14,22 +15,20 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
-  List<Job> jobs = []; 
+  List<Job> jobs = [];
 
   @override
   void initState() {
     super.initState();
-    fetchJobs(); 
+    fetchJobs();
   }
 
   Future<void> fetchJobs() async {
     try {
-   
       var response =
           await http.get(Uri.parse('http://212.132.108.203/api/job-list'));
 
       if (response.statusCode == 200) {
-      
         List<dynamic> responseData = jsonDecode(response.body);
         List<Job> fetchedJobs =
             responseData.map((e) => Job.fromJson(e)).toList();
@@ -38,11 +37,9 @@ class _HomeState extends State<Home> {
           jobs = fetchedJobs;
         });
       } else {
-        
         print('Failed to load jobs');
       }
     } catch (e) {
-      
       print('Error fetching jobs: $e');
     }
   }
@@ -220,75 +217,32 @@ class JobCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // Buttons
-            Expanded(
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => JobDetailsScreen(job: job),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.black87,
-                          backgroundColor: ColorConfig.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                        ),
-                        child: const Text(
-                          'View Details',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ApplyNowScreen(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.black87,
-                          backgroundColor: ColorConfig.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                        ),
-                        child: const Text(
-                          'Apply Now',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+            // View Details Button
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => JobDetailsDialog(job: job),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black87,
+                  backgroundColor: ColorConfig.primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text(
+                  'View Details',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

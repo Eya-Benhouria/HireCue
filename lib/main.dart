@@ -1,31 +1,35 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:hirecue_app/firebase_options.dart';
+import 'package:hirecue_app/screens/Home/home.dart';
+import 'package:hirecue_app/screens/Splash%20Screen/splash_screen.dart';
 
-import 'screens/Splash Screen/splash_screen.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
-  // firebse initialization
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const MyApp());
+  final User? user = FirebaseAuth.instance.currentUser;
+
+  runApp(MyApp(user: user));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final User? user;
+
+  const MyApp({Key? key, required this.user}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        // Add the line below to get horizontal sliding transitions for routes.
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.android: CupertinoPageTransitionsBuilder(),
         }),
       ),
-   
       title: 'HireCue',
-      home: const SplashScreen(),
+      home: user == null ? const SplashScreen() : Home(),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:hirecue_app/GlobalComponents/color_config.dart';
+import 'package:http/http.dart' as http;
 
 class PersonalityTest extends StatefulWidget {
   @override
@@ -9,8 +11,8 @@ class PersonalityTest extends StatefulWidget {
 
 class _PersonalityTestState extends State<PersonalityTest> {
   List<dynamic> _questions = [];
-  Map<int, String?> _responses = {}; 
-  bool _isFormValid = false; 
+  Map<int, String?> _responses = {};
+  bool _isFormValid = false;
 
   @override
   void initState() {
@@ -54,7 +56,7 @@ class _PersonalityTestState extends State<PersonalityTest> {
         SnackBar(content: Text('Test Submitted Successfully')),
       );
       Navigator.pushReplacementNamed(context, '/thankYouPage');
-    } else { 
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to submit test')),
       );
@@ -66,7 +68,7 @@ class _PersonalityTestState extends State<PersonalityTest> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Test Page'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: ColorConfig.primaryColor,
       ),
       body: _questions.isEmpty
           ? Center(child: CircularProgressIndicator())
@@ -111,6 +113,7 @@ class _PersonalityTestState extends State<PersonalityTest> {
         padding: EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: _isFormValid ? _submitTest : null,
+          
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.deepPurple, // Dark purple color
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
