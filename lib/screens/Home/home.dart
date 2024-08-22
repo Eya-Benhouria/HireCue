@@ -1,12 +1,15 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:hirecue_app/screens/Tests/JobDetailsScreen.dart';
-import 'package:http/http.dart' as http;
+import 'package:hirecue_app/screens/Authentication/sign_in.dart';
+import 'package:hirecue_app/screens/Home/JobDetailsScreen.dart';
 
+import 'package:http/http.dart' as http;
+import 'package:nb_utils/nb_utils.dart';
 import '../../GlobalComponents/color_config.dart';
 import '../../models/job.dart';
-
+import '../../services/auth_service.dart'; // Import AuthService
 
 class Home extends StatefulWidget {
   @override
@@ -16,6 +19,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
   List<Job> jobs = [];
+  final AuthService _authService = AuthService(); // Instantiate AuthService
 
   @override
   void initState() {
@@ -24,23 +28,50 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> fetchJobs() async {
-    try {
-      var response =
-          await http.get(Uri.parse('http://212.132.108.203/api/job-list'));
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token =
+        prefs.getString('jwt_token'); // Retrieve token from SharedPreferences
+
+    if (token != null) {
+      print('Token used for API call: $token');
+      print('Token length api: ${token.length}');
+      final response = await http.get(
+        Uri.parse('http://212.132.108.203/api/jobrole/getAll'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
-        List<dynamic> responseData = jsonDecode(response.body);
-        List<Job> fetchedJobs =
-            responseData.map((e) => Job.fromJson(e)).toList();
-
+        // Process response
         setState(() {
-          jobs = fetchedJobs;
+          jobs = parseJobs(
+              response.body); // Ensure you have a method to parse jobs
         });
       } else {
-        print('Failed to load jobs');
+        print('Failed to fetch jobs: ${response.statusCode}');
+        print('Response body: ${response.body}');
       }
+    } else {
+      print('No token found');
+    }
+  }
+
+  List<Job> parseJobs(String responseBody) {
+    final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
+    return parsed.map<Job>((json) => Job.fromJson(json)).toList();
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await _authService.googleSignout();
+      // Navigate to login screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => SignIn()),
+      );
     } catch (e) {
-      print('Error fetching jobs: $e');
+      print('Error signing out: $e');
     }
   }
 
@@ -107,6 +138,27 @@ class _HomeState extends State<Home> {
         selectedItemColor: ColorConfig.secondColor,
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
+      ),
+      bottomSheet: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _handleLogout,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+          child: const Text(
+            'Logout',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
     );
   }

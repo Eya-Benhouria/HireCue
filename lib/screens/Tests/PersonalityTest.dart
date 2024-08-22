@@ -1,10 +1,18 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:hirecue_app/GlobalComponents/color_config.dart';
+import 'package:hirecue_app/models/job.dart';
+import 'package:hirecue_app/screens/Home/ApplyNowScreen.dart';
+import 'package:hirecue_app/screens/Tests/PsychoTechnicalTest.dart';
 import 'package:http/http.dart' as http;
 
 class PersonalityTest extends StatefulWidget {
+  final int testId;
+ 
+final Job job;
+ 
+  const PersonalityTest({required this.testId, required this.job});
+
   @override
   _PersonalityTestState createState() => _PersonalityTestState();
 }
@@ -21,14 +29,13 @@ class _PersonalityTestState extends State<PersonalityTest> {
   }
 
   Future<void> _fetchTestQuestions() async {
-    final response = await http
-        .get(Uri.parse('http://212.132.108.203/api/page-test-candidate/1'));
+    final response = await http.get(Uri.parse(
+        'http://212.132.108.203/api/page-test-candidate/${widget.testId}'));
     if (response.statusCode == 200) {
       setState(() {
         _questions = json.decode(response.body);
       });
     } else {
-      // Handle error
       print('Failed to load test questions');
     }
   }
@@ -52,16 +59,39 @@ class _PersonalityTestState extends State<PersonalityTest> {
     );
 
     if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Test Submitted Successfully')),
-      );
-      Navigator.pushReplacementNamed(context, '/thankYouPage');
+      print('Test submission successful');
+      _showThankYouDialog();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit test')),
-      );
+      _showThankYouDialog();
     }
   }
+
+ void _showThankYouDialog() {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Thank you for submitting your responses'),
+        content: Text('Please press next to pass the psychotechnical test'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Next'),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ApplyNowScreen(job: widget.job), // Pass the Job object here
+                ),
+              );
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -113,9 +143,8 @@ class _PersonalityTestState extends State<PersonalityTest> {
         padding: EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: _isFormValid ? _submitTest : null,
-          
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple, // Dark purple color
+            backgroundColor: Colors.deepPurple,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20.0),

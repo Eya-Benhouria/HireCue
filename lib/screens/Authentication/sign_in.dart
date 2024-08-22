@@ -156,23 +156,37 @@ class _SignInState extends State<SignIn> {
                           ],
                         ),
                         const SizedBox(height: 20.0),
-                        ButtonGlobal(
-                          buttontext: 'Sign In',
-                          buttonDecoration: kButtonDecoration.copyWith(
-                            color: ColorConfig.secondColor,
-                          ),
-                          onPressed: () async {
-                            bool success = await AuthService().signin(
-                                email: _emailController.text,
-                                password: _passwordController.text,
-                                context: context);
-                            if (success && isChecked) {
-                              _saveUserLoginState();
-                            } else if (!isChecked) {
-                              _clearUserLoginState();
-                            }
-                          },
-                        ),
+                       ButtonGlobal(
+  buttontext: 'Sign In',
+  buttonDecoration: kButtonDecoration.copyWith(
+    color: ColorConfig.secondColor,
+  ),
+  onPressed: () async {
+    try {
+      await AuthService().signin(
+        email: _emailController.text,
+        password: _passwordController.text,
+        context: context,
+      );
+      if (isChecked) {
+        _saveUserLoginState();
+      } else {
+        _clearUserLoginState();
+      }
+    } catch (e) {
+      // Handle the error, show a message or alert to the user
+      Fluttertoast.showToast(
+        msg: 'Sign In failed: ${e.toString()}',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    }
+  },
+),
+
                         const SizedBox(height: 20.0),
                         // Divider for visual separation
                         const Divider(color: Colors.grey),

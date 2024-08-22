@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hirecue_app/GlobalComponents/color_config.dart';
-import 'package:hirecue_app/screens/Tests/PsychoTechnicalTest.dart';
-
+import 'package:hirecue_app/screens/Home/ApplyNowScreen.dart';
+import '../Tests/PersonalityTest.dart';
+import '../Tests/PsychoTechnicalTest.dart';
 import '../../models/job.dart';
 
 class JobDetailsDialog extends StatefulWidget {
@@ -82,8 +83,7 @@ class _JobDetailsDialogState extends State<JobDetailsDialog> {
                   Wrap(
                     spacing: 8.0,
                     runSpacing: 4.0,
-                    children: widget.job.skills
-                        .split(',')
+                    children: parseSkills(widget.job.skills)
                         .map((skill) => Chip(
                               label: Text(skill.trim()),
                               backgroundColor: _getColorForSkill(skill.trim()),
@@ -118,7 +118,13 @@ class _JobDetailsDialogState extends State<JobDetailsDialog> {
 
                 // Additional Details (optional)
                 buildDetailSection(context, 'Additional Details', [
-                  buildDetailRow('Specialisms:', widget.job.specialisms),
+                  buildDetailRow(
+                      'Specialisms:',
+                      widget.job.specialisms
+                          .replaceAll('[', '')
+                          .replaceAll(']', '')
+                          .replaceAll('"', '')
+                          .replaceAll("'", '')),
                   buildDetailRow('Experience:', widget.job.experience),
                   buildDetailRow(
                       'Qualification:', widget.job.typeOfQualification),
@@ -131,6 +137,7 @@ class _JobDetailsDialogState extends State<JobDetailsDialog> {
 
                 SizedBox(height: 20),
 
+                // Apply Button
                 // Apply Button
                 Center(
                   child: ElevatedButton.icon(
@@ -148,8 +155,9 @@ class _JobDetailsDialogState extends State<JobDetailsDialog> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => TestPsychotechniqueCandidat(
-                              testId: widget.job.id),
+                          builder: (context) => ApplyNowScreen(
+                              job: widget
+                                  .job), // Ensure the Job object is passed correctly
                         ),
                       );
                     },
@@ -216,6 +224,12 @@ class _JobDetailsDialogState extends State<JobDetailsDialog> {
         ],
       ),
     );
+  }
+
+  List<String> parseSkills(String skills) {
+    RegExp regExp = RegExp(r"\('([^']*)'");
+    Iterable<Match> matches = regExp.allMatches(skills);
+    return matches.map((match) => match.group(1)!).toList();
   }
 
   Color _getColorForSkill(String skill) {
