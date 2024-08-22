@@ -26,6 +26,38 @@ class _SignInState extends State<SignIn> {
   bool obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserLoginState();
+  }
+
+  Future<void> _loadUserLoginState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isChecked = prefs.getBool('isLoggedIn') ?? false;
+      if (isChecked) {
+        // You can retrieve saved email and password if needed
+        _emailController.text = prefs.getString('email') ?? '';
+        _passwordController.text = prefs.getString('password') ?? '';
+      }
+    });
+  }
+
+  Future<void> _saveUserLoginState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool('isLoggedIn', true);
+    prefs.setString('email', _emailController.text);
+    prefs.setString('password', _passwordController.text);
+  }
+
+  Future<void> _clearUserLoginState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.remove('isLoggedIn');
+    prefs.remove('email');
+    prefs.remove('password');
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
@@ -124,18 +156,37 @@ class _SignInState extends State<SignIn> {
                           ],
                         ),
                         const SizedBox(height: 20.0),
-                        ButtonGlobal(
-                          buttontext: 'Sign In',
-                          buttonDecoration: kButtonDecoration.copyWith(
-                            color: ColorConfig.secondColor,
-                          ),
-                          onPressed: () async {
-                            await AuthService().signin(
-                                email: _emailController.text,
-                                password: _passwordController.text,
-                                context: context);
-                          },
-                        ),
+                       ButtonGlobal(
+  buttontext: 'Sign In',
+  buttonDecoration: kButtonDecoration.copyWith(
+    color: ColorConfig.secondColor,
+  ),
+  onPressed: () async {
+    try {
+      await AuthService().signin(
+        email: _emailController.text,
+        password: _passwordController.text,
+        context: context,
+      );
+      if (isChecked) {
+        _saveUserLoginState();
+      } else {
+        _clearUserLoginState();
+      }
+    } catch (e) {
+      // Handle the error, show a message or alert to the user
+      Fluttertoast.showToast(
+        msg: 'Sign In failed: ${e.toString()}',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    }
+  },
+),
+
                         const SizedBox(height: 20.0),
                         // Divider for visual separation
                         const Divider(color: Colors.grey),

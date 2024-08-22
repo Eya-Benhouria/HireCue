@@ -1,6 +1,15 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:hirecue_app/screens/Authentication/sign_in.dart';
+import 'package:hirecue_app/screens/Home/JobDetailsScreen.dart';
+
+import 'package:http/http.dart' as http;
+import 'package:nb_utils/nb_utils.dart';
 import '../../GlobalComponents/color_config.dart';
+import '../../models/job.dart';
+import '../../services/auth_service.dart'; // Import AuthService
 
 class Home extends StatefulWidget {
   @override
@@ -9,6 +18,62 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
+  List<Job> jobs = [];
+  final AuthService _authService = AuthService(); // Instantiate AuthService
+
+  @override
+  void initState() {
+    super.initState();
+    fetchJobs();
+  }
+
+  Future<void> fetchJobs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token =
+        prefs.getString('jwt_token'); // Retrieve token from SharedPreferences
+
+    if (token != null) {
+      print('Token used for API call: $token');
+      print('Token length api: ${token.length}');
+      final response = await http.get(
+        Uri.parse('http://212.132.108.203/api/jobrole/getAll'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Process response
+        setState(() {
+          jobs = parseJobs(
+              response.body); // Ensure you have a method to parse jobs
+        });
+      } else {
+        print('Failed to fetch jobs: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } else {
+      print('No token found');
+    }
+  }
+
+  List<Job> parseJobs(String responseBody) {
+    final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
+    return parsed.map<Job>((json) => Job.fromJson(json)).toList();
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await _authService.googleSignout();
+      // Navigate to login screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => SignIn()),
+      );
+    } catch (e) {
+      print('Error signing out: $e');
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -43,9 +108,9 @@ class _HomeState extends State<Home> {
               crossAxisSpacing: 10.0,
               mainAxisSpacing: 10.0,
             ),
-            itemCount: 10, // Replace with your actual item count
+            itemCount: jobs.length,
             itemBuilder: (context, index) {
-              return JobCard();
+              return JobCard(job: jobs[index]);
             },
           ),
         ),
@@ -74,11 +139,36 @@ class _HomeState extends State<Home> {
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
       ),
+      bottomSheet: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _handleLogout,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+          child: const Text(
+            'Logout',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class JobCard extends StatelessWidget {
+  final Job job;
+
+  const JobCard({required this.job});
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -87,129 +177,123 @@ class JobCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Expanded(
-              child: Text(
-                'Computer programmer',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+            // Job Title
+            Text(
+              job.jobTitle,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            const SizedBox(height: 8),
+
+            // Offered Salary
+            Row(
+              children: <Widget>[
+                Icon(Icons.monetization_on, size: 16),
+                SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    job.offeredSalary,
+                    style: TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // Experience
+            Row(
+              children: <Widget>[
+                Icon(Icons.work, size: 16),
+                SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    job.experience,
+                    style: TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // Job Type
+            Row(
+              children: <Widget>[
+                Icon(Icons.calendar_today, size: 16),
+                SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    job.jobType,
+                    style: TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // Posted Date
+            Row(
+              children: <Widget>[
+                Icon(Icons.access_time, size: 16),
+                SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    'Posted: ${job.postedDate.substring(0, 10)}',
+                    style: TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // Close Date
+            Row(
+              children: <Widget>[
+                Icon(Icons.access_time, size: 16),
+                SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    'Close: ${job.closeDate.substring(0, 10)}',
+                    style: TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
-            const Row(
-              children: <Widget>[
-                Icon(Icons.business),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'Tech Solutions',
-                    style: TextStyle(
-                      fontSize: 14,
-                    ),
+
+            // View Details Button
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => JobDetailsDialog(job: job),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black87,
+                  backgroundColor: ColorConfig.primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            const Row(
-              children: <Widget>[
-                Icon(Icons.location_on),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'UK',
-                    style: TextStyle(
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            const Row(
-              children: <Widget>[
-                Icon(Icons.monetization_on),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    '30,000-40,000',
-                    style: TextStyle(
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            const Row(
-              children: <Widget>[
-                Icon(Icons.calendar_today),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'Contract',
-                    style: TextStyle(
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            const Row(
-              children: <Widget>[
-                Icon(Icons.work),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    '3+ years',
-                    style: TextStyle(
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Flexible(
-              child: SingleChildScrollView(
-                child: Text(
-                  'A data analyst collects, interprets and visualizes data to uncover insights. A data analyst assigns a numerical value to business functions so performance is assessed and compared over time.',
+                child: const Text(
+                  'View Details',
                   style: TextStyle(
-                    fontSize: 12,
-                  ),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            const SizedBox(height: 5),
-            // Increase height of the button section
-            SizedBox(
-              height: 60, // Set a fixed height for the button area
-              child: Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Handle "Apply Now" button press
-                  },
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    backgroundColor: ColorConfig.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 15,
-                    ),
-                  ),
-                  child: const Text(
-                    'Apply Now',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
