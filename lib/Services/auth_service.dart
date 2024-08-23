@@ -166,10 +166,8 @@ class AuthService {
       final String userId = userCredential.user!.uid;
       print('User UID: $userId');
 
-      // Construct the full API URL
       final String apiUrl = 'http://212.132.108.203/api/users/local/$userId';
 
-      // Ensure the URL is parsed correctly
       final Uri uri = Uri.parse(apiUrl);
 
       final http.Response userResponse = await http.get(uri);
@@ -177,23 +175,23 @@ class AuthService {
       if (userResponse.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(userResponse.body);
         print('User Data: $data');
+
+        String? idToken = data['token'];
+        if (idToken != null) {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('jwt_token', idToken);
+          print('Token length: ${idToken.length}');
+          print('Token saved: $idToken');
+          await prefs.setString('localId', userId);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (BuildContext context) => Home()),
+          );
+        } else {
+          throw Exception('Failed to retrieve ID token');
+        }
       } else {
         throw Exception('Failed to load user data');
-      }
-
-      String? idToken = await userCredential.user!.getIdToken();
-      if (idToken != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwt_token', idToken);
-        print('Token length: ${idToken.length}');
-        print('Token saved: $idToken');
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (BuildContext context) => Home()),
-        );
-      } else {
-        throw Exception('Failed to retrieve ID token');
       }
     } on FirebaseAuthException catch (e) {
       Fluttertoast.showToast(
@@ -212,34 +210,6 @@ class AuthService {
   Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt_token');
-  }
-
-// Helper method to decode JWT token
-  Map<String, dynamic> _decodeJwt(String token) {
-    final parts = token.split('.');
-    if (parts.length == 3) {
-      final payload = _base64UrlDecode(parts[1]);
-      return json.decode(utf8.decode(payload));
-    } else {
-      throw Exception('Invalid token');
-    }
-  }
-
-  Uint8List _base64UrlDecode(String input) {
-    String output = input.replaceAll('-', '+').replaceAll('_', '/');
-    switch (output.length % 4) {
-      case 0:
-        break;
-      case 2:
-        output += '==';
-        break;
-      case 3:
-        output += '=';
-        break;
-      default:
-        throw Exception('Illegal base64url string!');
-    }
-    return base64.decode(output);
   }
 
   Future<void> signout({required BuildContext context}) async {

@@ -29,17 +29,16 @@ class _HomeState extends State<Home> {
 
   Future<void> fetchJobs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token =
-        prefs.getString('jwt_token'); // Retrieve token from SharedPreferences
-
+    
+    String? token = prefs.getString('jwt_token');
     if (token != null) {
       print('Token used for API call: $token');
       print('Token length api: ${token.length}');
+
       final response = await http.get(
         Uri.parse('http://212.132.108.203/api/jobrole/getAll'),
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
         },
       );
 
@@ -53,6 +52,12 @@ class _HomeState extends State<Home> {
         print('Failed to fetch jobs: ${response.statusCode}');
         print('Response body: ${response.body}');
       }
+
+      // Display response headers
+      print('Response headers:');
+      response.headers.forEach((key, value) {
+        print('$key: $value');
+      });
     } else {
       print('No token found');
     }
