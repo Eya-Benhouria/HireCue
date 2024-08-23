@@ -2,14 +2,14 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:hirecue_app/screens/Authentication/profile_screen.dart';
 import 'package:hirecue_app/screens/Authentication/sign_in.dart';
-import 'package:hirecue_app/screens/Home/JobDetailsScreen.dart';
-
 import 'package:http/http.dart' as http;
 import 'package:nb_utils/nb_utils.dart';
+
 import '../../GlobalComponents/color_config.dart';
 import '../../models/job.dart';
-import '../../services/auth_service.dart'; // Import AuthService
+import '../../services/auth_service.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -19,7 +19,16 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
   List<Job> jobs = [];
+  late User currentUser;
   final AuthService _authService = AuthService(); // Instantiate AuthService
+
+  // Add the list of pages
+  static final List<Widget> _pages = <Widget>[
+    HomePage(),
+    HistoryPage(),
+    SavedPage(),
+    const ProfileScreen(),
+  ];
 
   @override
   void initState() {
@@ -29,12 +38,9 @@ class _HomeState extends State<Home> {
 
   Future<void> fetchJobs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token =
-        prefs.getString('jwt_token'); // Retrieve token from SharedPreferences
+    String? token = prefs.getString('jwt_token');
 
     if (token != null) {
-      print('Token used for API call: $token');
-      print('Token length api: ${token.length}');
       final response = await http.get(
         Uri.parse('http://212.132.108.203/api/jobrole/getAll'),
         headers: {
@@ -44,10 +50,8 @@ class _HomeState extends State<Home> {
       );
 
       if (response.statusCode == 200) {
-        // Process response
         setState(() {
-          jobs = parseJobs(
-              response.body); // Ensure you have a method to parse jobs
+          jobs = parseJobs(response.body);
         });
       } else {
         print('Failed to fetch jobs: ${response.statusCode}');
@@ -64,14 +68,56 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _handleLogout() async {
-    try {
-      await _authService.googleSignout();
-      // Navigate to login screen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => SignIn()),
-      );
-    } catch (e) {
-      print('Error signing out: $e');
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Confirm Logout',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: ColorConfig.secondColor,
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Logout',
+                style: TextStyle(
+                  color: ColorConfig.secondColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Proceed with logout if confirmed
+    if (confirmed == true) {
+      try {
+        await _authService.googleSignout();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const SignIn()),
+        );
+      } catch (e) {
+        print('Error signing out: $e');
+      }
     }
   }
 
@@ -84,37 +130,40 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'images/logo.png',
-              height: 50,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(70.0),
+        child: AppBar(
+          backgroundColor: Colors.white70,
+          elevation: 4,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const SizedBox(width: 10),
+              Image.asset(
+                'images/logo.png',
+                height: 45,
+              ),
+              const SizedBox(width: 10),
+            ],
+          ),
+          automaticallyImplyLeading: false,
+          actions: [
+            const Text(
+              'Logout',
+              style: TextStyle(
+                color: ColorConfig.secondColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout, color: ColorConfig.secondColor),
+              onPressed: _handleLogout,
             ),
           ],
         ),
-        automaticallyImplyLeading: false,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 3 / 4,
-              crossAxisSpacing: 10.0,
-              mainAxisSpacing: 10.0,
-            ),
-            itemCount: jobs.length,
-            itemBuilder: (context, index) {
-              return JobCard(job: jobs[index]);
-            },
-          ),
-        ),
-      ),
+      body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -139,167 +188,41 @@ class _HomeState extends State<Home> {
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
       ),
-      bottomSheet: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: _handleLogout,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          child: const Text(
-            'Logout',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Home Page',
+        style: TextStyle(fontSize: 24),
       ),
     );
   }
 }
 
-class JobCard extends StatelessWidget {
-  final Job job;
-
-  const JobCard({required this.job});
-
+class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Job Title
-            Text(
-              job.jobTitle,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-            const SizedBox(height: 8),
+    return const Center(
+      child: Text(
+        'History Page',
+        style: TextStyle(fontSize: 24),
+      ),
+    );
+  }
+}
 
-            // Offered Salary
-            Row(
-              children: <Widget>[
-                Icon(Icons.monetization_on, size: 16),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    job.offeredSalary,
-                    style: TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Experience
-            Row(
-              children: <Widget>[
-                Icon(Icons.work, size: 16),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    job.experience,
-                    style: TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Job Type
-            Row(
-              children: <Widget>[
-                Icon(Icons.calendar_today, size: 16),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    job.jobType,
-                    style: TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Posted Date
-            Row(
-              children: <Widget>[
-                Icon(Icons.access_time, size: 16),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'Posted: ${job.postedDate.substring(0, 10)}',
-                    style: TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Close Date
-            Row(
-              children: <Widget>[
-                Icon(Icons.access_time, size: 16),
-                SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'Close: ${job.closeDate.substring(0, 10)}',
-                    style: TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            // View Details Button
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => JobDetailsDialog(job: job),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black87,
-                  backgroundColor: ColorConfig.primaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                ),
-                child: const Text(
-                  'View Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+class SavedPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Saved Page',
+        style: TextStyle(fontSize: 24),
       ),
     );
   }

@@ -8,13 +8,13 @@ class BottomBar extends StatelessWidget {
     return Scaffold(
       body: Center(child: Text('Content goes here')),
       bottomNavigationBar: SizedBox(
-        height: 70, // Specify the height of the bottom navigation bar
+        height: 70, 
         child: BottomNavigationBar(
-          currentIndex: 0, // Set the initial index
+          currentIndex: 0, 
           onTap: (index) {
             // Handle navigation logic here, e.g., updating state
           },
-          type: BottomNavigationBarType.fixed, // Ensures all items are displayed
+          type: BottomNavigationBarType.fixed, 
           elevation: 0, // No shadow
           selectedLabelStyle: const TextStyle(
             fontFamily: 'OutfitMedium',
@@ -32,7 +32,7 @@ class BottomBar extends StatelessWidget {
               icon: Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Image.asset(
-                  'assets/images/chat.png', // Replace with your image path
+                  'assets/images/chat.png', 
                   width: 22,
                 ),
               ),
@@ -40,9 +40,9 @@ class BottomBar extends StatelessWidget {
               activeIcon: Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Image.asset(
-                  'assets/images/chat.png', // Replace with your image path
+                  'assets/images/chat.png',
                   width: 22,
-                  color: Colors.blue, // Replace with your active color
+                  color: Colors.blue, 
                 ),
               ),
             ),
@@ -50,7 +50,7 @@ class BottomBar extends StatelessWidget {
               icon: Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Image.asset(
-                  'assets/images/more.png', // Replace with your image path
+                  'assets/images/more.png', 
                   width: 22,
                 ),
               ),
@@ -58,9 +58,9 @@ class BottomBar extends StatelessWidget {
               activeIcon: Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Image.asset(
-                  'assets/images/more.png', // Replace with your image path
+                  'assets/images/more.png', 
                   width: 22,
-                  color: Colors.blue, // Replace with your active color
+                  color: Colors.blue, 
                 ),
               ),
             ),
@@ -68,7 +68,7 @@ class BottomBar extends StatelessWidget {
               icon: Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Image.asset(
-                  'assets/images/profile.png', // Replace with your image path
+                  'assets/images/profile.png', 
                   width: 22,
                 ),
               ),
@@ -76,9 +76,9 @@ class BottomBar extends StatelessWidget {
               activeIcon: Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Image.asset(
-                  'assets/images/profile.png', // Replace with your image path
+                  'assets/images/profile.png',
                   width: 22,
-                  color: Colors.blue, // Replace with your active color
+                  color: Colors.blue,
                 ),
               ),
             ),

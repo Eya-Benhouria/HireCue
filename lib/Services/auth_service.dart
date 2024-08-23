@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,9 +6,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hirecue_app/screens/Authentication/sign_in.dart';
 import 'package:hirecue_app/screens/Home/home.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -16,7 +15,7 @@ class AuthService {
   final String apiUrl =
       'http://212.132.108.203/'; // Replace with your API base URL
   final String firebaseApiKey =
-      'AIzaSyCnNu3QfMpt_5rllrlclyaA0fcjduRIa6U'; // Replace with your Firebase API Key
+      'YOUR_FIREBASE_API_KEY'; // Replace with your Firebase API Key
 
   Future<bool> signup({
     required String firstName,
@@ -37,10 +36,10 @@ class AuthService {
           textColor: Colors.white,
           fontSize: 14.0,
         );
-        return false; // Indicate failure
+        return false;
       }
 
-      // Create user
+      // Create user with Firebase Authentication
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -72,11 +71,23 @@ class AuthService {
         );
 
         if (saveUserResponse.statusCode == 200) {
+          // Fetch user data and store it
+          final userData = await getUserData(userCredential.user!.uid);
+          if (userData.isNotEmpty) {
+            await SharedPreferences.getInstance().then((prefs) {
+              prefs.setString('firstName', userData['firstName']);
+              prefs.setString('lastName', userData['lastName']);
+              prefs.setString('email', userData['email']);
+              prefs.setString('phoneNumber', userData['phoneNumber']);
+              prefs.setString('role', userData['role']);
+            });
+          }
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (BuildContext context) => Home()),
           );
-          return true; // Indicate success
+          return true;
         } else {
           Fluttertoast.showToast(
             msg: 'Failed to save user',
@@ -86,7 +97,7 @@ class AuthService {
             textColor: Colors.white,
             fontSize: 14.0,
           );
-          return false; // Indicate failure
+          return false;
         }
       } else {
         Fluttertoast.showToast(
@@ -97,7 +108,7 @@ class AuthService {
           textColor: Colors.white,
           fontSize: 14.0,
         );
-        return false; // Indicate failure
+        return false;
       }
     } on FirebaseAuthException catch (e) {
       Fluttertoast.showToast(
@@ -108,10 +119,10 @@ class AuthService {
         textColor: Colors.white,
         fontSize: 14.0,
       );
-      return false; // Indicate failure
+      return false;
     } catch (e) {
       print('Signup Error: ${e.toString()}');
-      return false; // Indicate failure
+      return false;
     }
   }
 
@@ -119,7 +130,7 @@ class AuthService {
     try {
       await user.sendEmailVerification();
       Fluttertoast.showToast(
-        msg: 'Verification email sent',
+        msg: 'Verification email sent. Please check your inbox.',
         toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.SNACKBAR,
         backgroundColor: Colors.green,
@@ -128,6 +139,77 @@ class AuthService {
       );
     } catch (e) {
       print('Failed to send email verification: ${e.toString()}');
+    }
+  }
+
+  Future<void> signin({
+    required String email,
+    required String password,
+    required BuildContext context,
+  }) async {
+    try {
+      // Attempt to sign in the user
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Check if the email is verified
+      if (!userCredential.user!.emailVerified) {
+        // If not verified, send another verification email
+        await sendEmailVerification(userCredential.user!);
+
+        Fluttertoast.showToast(
+          msg:
+              'Email not verified. A verification email has been sent again. Please verify your email before signing in.',
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.SNACKBAR,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+
+        // Sign out the user to prevent them from accessing the app
+        await _auth.signOut();
+        return;
+      }
+
+      // Continue with sign-in process if email is verified
+      String? idToken = await userCredential.user!.getIdToken();
+      if (idToken != null) {
+        // Fetch user data and store it
+        final userData = await getUserData(userCredential.user!.uid);
+        if (userData.isNotEmpty) {
+          await SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('firstName', userData['firstName']);
+            prefs.setString('lastName', userData['lastName']);
+            prefs.setString('email', userData['email']);
+            prefs.setString('phoneNumber', userData['phoneNumber']);
+            prefs.setString('role', userData['role']);
+          });
+        }
+
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('jwt_token', idToken);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (BuildContext context) => Home()),
+        );
+      } else {
+        throw Exception('Failed to retrieve ID token');
+      }
+    } on FirebaseAuthException catch (e) {
+      Fluttertoast.showToast(
+        msg: formatError(e),
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } catch (e) {
+      print('Signin Error: ${e.toString()}');
     }
   }
 
@@ -151,97 +233,6 @@ class AuthService {
     return messages;
   }
 
-  Future<void> signin({
-    required String email,
-    required String password,
-    required BuildContext context,
-  }) async {
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Store the UID in a variable
-      final String userId = userCredential.user!.uid;
-      print('User UID: $userId');
-
-      // Construct the full API URL
-      final String apiUrl = 'http://212.132.108.203/api/users/local/$userId';
-
-      // Ensure the URL is parsed correctly
-      final Uri uri = Uri.parse(apiUrl);
-
-      final http.Response userResponse = await http.get(uri);
-
-      if (userResponse.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(userResponse.body);
-        print('User Data: $data');
-      } else {
-        throw Exception('Failed to load user data');
-      }
-
-      String? idToken = await userCredential.user!.getIdToken();
-      if (idToken != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwt_token', idToken);
-        print('Token length: ${idToken.length}');
-        print('Token saved: $idToken');
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (BuildContext context) => Home()),
-        );
-      } else {
-        throw Exception('Failed to retrieve ID token');
-      }
-    } on FirebaseAuthException catch (e) {
-      Fluttertoast.showToast(
-        msg: formatError(e),
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.SNACKBAR,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 14.0,
-      );
-    } catch (e) {
-      print('Signin Error: ${e.toString()}');
-    }
-  }
-
-  Future<String?> getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jwt_token');
-  }
-
-// Helper method to decode JWT token
-  Map<String, dynamic> _decodeJwt(String token) {
-    final parts = token.split('.');
-    if (parts.length == 3) {
-      final payload = _base64UrlDecode(parts[1]);
-      return json.decode(utf8.decode(payload));
-    } else {
-      throw Exception('Invalid token');
-    }
-  }
-
-  Uint8List _base64UrlDecode(String input) {
-    String output = input.replaceAll('-', '+').replaceAll('_', '/');
-    switch (output.length % 4) {
-      case 0:
-        break;
-      case 2:
-        output += '==';
-        break;
-      case 3:
-        output += '=';
-        break;
-      default:
-        throw Exception('Illegal base64url string!');
-    }
-    return base64.decode(output);
-  }
-
   Future<void> signout({required BuildContext context}) async {
     try {
       await _auth.signOut();
@@ -255,6 +246,25 @@ class AuthService {
       );
     } catch (e) {
       print('Signout Error: ${e.toString()}');
+    }
+  }
+
+  String formatError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Invalid email address.';
+      case 'user-disabled':
+        return 'User disabled.';
+      case 'user-not-found':
+        return 'No user found for that email.';
+      case 'wrong-password':
+        return 'Wrong password provided for that user.';
+      case 'email-already-in-use':
+        return 'An account already exists with that email.';
+      case 'weak-password':
+        return 'The password provided is too weak.';
+      default:
+        return 'An undefined error occurred.';
     }
   }
 
@@ -352,22 +362,21 @@ class AuthService {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
-  String formatError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-email':
-        return 'Invalid email address.';
-      case 'user-disabled':
-        return 'User disabled.';
-      case 'user-not-found':
-        return 'No user found for that email.';
-      case 'wrong-password':
-        return 'Wrong password provided for that user.';
-      case 'email-already-in-use':
-        return 'An account already exists with that email.';
-      case 'weak-password':
-        return 'The password provided is too weak.';
-      default:
-        return 'An undefined error occurred.';
+  Future<Map<String, dynamic>> getUserData(String uid) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiUrl/api/users/$uid'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load user data');
+      }
+    } catch (e) {
+      print('Get user data error: ${e.toString()}');
+      return {};
     }
   }
 }
